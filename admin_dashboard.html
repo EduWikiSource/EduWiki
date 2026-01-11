@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard - EduWiki</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:0;}
+header{background:#0073aa;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header button{background:#005d88;border:none;color:white;padding:8px 12px;border-radius:4px;cursor:pointer;}
+.container{max-width:1000px;margin:20px auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+.article-card{border:1px solid #ddd;padding:10px;border-radius:6px;margin-bottom:15px;background:#fafafa;position:relative;}
+.article-card button{margin:2px;padding:4px 8px;cursor:pointer;}
+.badge{padding:2px 6px;font-size:12px;border-radius:4px;color:white;margin-left:5px;}
+.badge.free{background:#28a745;}
+.badge.premium{background:#dc3545;}
+.badge.restricted{background:#6c757d;}
+.badge.admin{background:#6c757d;}
+.reported{background:#ffe6e6;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Admin Dashboard</h1>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+<h2>Reported Articles</h2>
+<p>Here you can manage reported articles. Edit or delete as necessary.</p>
+
+<div id="reportedArticles"></div>
+
+<a href="dashboard.html">⬅ Back to Main Dashboard</a>
+</div>
+
+<script>
+// ===== LOGIN CHECK =====
+const currentUser = localStorage.getItem("currentUser");
+const currentRole = localStorage.getItem("currentRole");
+if(!currentUser || currentRole!=="admin"){
+    alert("Access denied! Admins only.");
+    window.location.href="index.html";
+}
+
+// ===== LOGOUT =====
+function logout(){
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("currentRole");
+    window.location.href="index.html";
+}
+
+// ===== GLOBAL ARTICLES =====
+let articles = JSON.parse(localStorage.getItem("articles")) || [];
+
+// ===== DISPLAY REPORTED ARTICLES =====
+function displayReported(){
+    const container = document.getElementById("reportedArticles");
+    const reported = articles.map((a,i)=>({article:a,index:i})).filter(({article})=>article.reported);
+
+    let output = "";
+    if(reported.length===0){
+        output = "<p>No reported articles.</p>";
+    } else {
+        reported.forEach(({article,index})=>{
+            let badgeClass=article.accessType==="premium"?"premium":article.accessType==="restricted"?"restricted":"free";
+            let badge=`<span class="badge ${badgeClass}">${article.accessType.toUpperCase()}</span>`;
+
+            output+=`
+            <div class="article-card reported" id="article-${index}">
+                ${badge} <span class="badge admin">ADMIN</span>
+                <h3>${article.title}</h3>
+                <p><b>Category:</b> ${article.category||"General"}</p>
+                <p>${article.content}</p>
+                <p><b>Author:</b> ${article.author||"Anonymous"} | ❤️ Likes: ${article.likes||0}</p>
+                <button onclick="editArticle(${index})">✏️ Edit</button>
+                <button onclick="deleteArticle(${index})">🗑️ Delete</button>
+            </div>`;
+        });
+    }
+    container.innerHTML=output;
+}
+
+// ===== EDIT ARTICLE =====
+function editArticle(i){
+    if(!articles[i]) return;
+    const newContent = prompt("Edit content:",articles[i].content);
+    if(newContent!==null){
+        articles[i].content = newContent;
+        articles[i].reported = false; // clear report after edit
+        localStorage.setItem("articles",JSON.stringify(articles));
+        displayReported();
+    }
+}
+
+// ===== DELETE ARTICLE =====
+function deleteArticle(i){
+    if(!articles[i]) return;
+    if(confirm("Are you sure you want to delete this article?")){
+        articles.splice(i,1);
+        localStorage.setItem("articles",JSON.stringify(articles));
+        displayReported();
+    }
+}
+
+// ===== INITIAL LOAD =====
+displayReported();
+</script>
+
+</body>
+</html>

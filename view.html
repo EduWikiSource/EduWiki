@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>View Articles - EduWiki</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:0;}
+header{background:#0073aa;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header button{background:#005d88;border:none;color:white;padding:8px 12px;border-radius:4px;cursor:pointer;}
+.container{max-width:1000px;margin:20px auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+.article-card{border:1px solid #ddd;padding:10px;border-radius:6px;margin-bottom:15px;background:#fafafa;position:relative;}
+.article-card button{margin:2px;padding:4px 8px;cursor:pointer;}
+.badge{padding:2px 6px;font-size:12px;border-radius:4px;color:white;margin-left:5px;}
+.badge.free{background:#28a745;}
+.badge.premium{background:#dc3545;}
+.badge.restricted{background:#6c757d;}
+.badge.admin{background:#6c757d;}
+#filterCategory{padding:6px;}
+.reported{background:#ffe6e6;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>View Articles</h1>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+<!-- Category Filter -->
+<label>Filter by Category:</label>
+<select id="filterCategory" onchange="filterArticles()">
+  <option value="All">All</option>
+  <option>Technology</option>
+  <option>Education</option>
+  <option>Science</option>
+  <option>Health</option>
+  <option>Business</option>
+  <option>General</option>
+</select>
+<br><br>
+
+<!-- Articles -->
+<div id="articles"></div>
+
+<a href="dashboard.html">⬅ Back to Dashboard</a>
+</div>
+
+<script>
+// ===== LOGIN CHECK =====
+const currentUser = localStorage.getItem("currentUser");
+const currentRole = localStorage.getItem("currentRole"); // MUST set during login
+if(!currentUser){ alert("Login first"); window.location.href="index.html";}
+
+// ===== LOGOUT =====
+function logout(){
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("currentRole");
+    window.location.href="index.html";
+}
+
+// ===== PREMIUM CHECK =====
+function isPremiumUser(){ 
+    return localStorage.getItem("premiumUser")==="true"; 
+}
+
+// ===== GLOBAL ARTICLES =====
+let articles = JSON.parse(localStorage.getItem("articles")) || [];
+
+// ===== DISPLAY ARTICLES =====
+function displayArticles(list){
+    const container=document.getElementById("articles");
+    let output="";
+    list.forEach((a,i)=>{
+        let content=a.content;
+
+        // Premium/Restricted lock
+        if(a.accessType==="premium" && !isPremiumUser())
+            content="🔒 Premium article. <button onclick='upgradePremium()'>Upgrade Now</button>";
+        else if(a.accessType==="restricted" && !isPremiumUser())
+            content="🔒 Restricted article. <button onclick='upgradePremium()'>Upgrade Now</button>";
+
+        // article reported style
+        const reportedClass=a.reported ? "reported" : "";
+
+        // badges
+        let badgeClass=a.accessType==="premium"?"premium":a.accessType==="restricted"?"restricted":"free";
+        let badge=`<span class="badge ${badgeClass}">${a.accessType.toUpperCase()}</span>`;
+
+        // admin badge
+        if(a.author.toLowerCase()===currentUser.toLowerCase() && currentRole==="admin"){
+            badge+=` <span class="badge admin">ADMIN</span>`;
+        }
+
+        // Buttons: like, report, edit, delete
+        const reportBtn=(a.author!==currentUser && !a.reported)? `<button onclick="reportArticle(${i})">🚩 Report</button>` : (a.reported? "<span style='color:red;'>Reported</span>" : "");
+        const editBtn=(a.author===currentUser || currentRole==="admin")? `<button onclick="editArticle(${i})">✏️ Edit</button>` : "";
+        const deleteBtn=(currentRole==="admin")? `<button onclick="deleteArticle(${i})">🗑️ Delete</button>` : "";
+
+        output+=`
+        <div class="article-card ${reportedClass}" id="article-${i}">
+            ${badge}
+            <h3>${a.title}</h3>
+            <p><b>Category:</b> ${a.category||"General"}</p>
+            <p id="content-${i}">${content}</p>
+            <p><b>Author:</b> ${a.author||"Anonymous"} | ❤️ Likes: ${a.likes||0}</p>
+            <button onclick="likeArticle(${i})">❤️ Like</button>
+            ${reportBtn} ${editBtn} ${deleteBtn}
+        </div>`;
+    });
+    container.innerHTML=output;
+}
+
+// ===== FILTER ARTICLES =====
+function filterArticles(){
+    const selected=(document.getElementById("filterCategory").value||"All").trim().toLowerCase();
+    const filtered=articles.filter(a=> selected==="all" || (a.category||"General").trim().toLowerCase()===selected);
+    displayArticles(filtered);
+}
+
+// ===== LIKE ARTICLE =====
+function likeArticle(i){
+    if(!articles[i]) return;
+    articles[i].likes=(articles[i].likes||0)+1;
+    localStorage.setItem("articles",JSON.stringify(articles));
+    filterArticles();
+}
+
+// ===== REPORT ARTICLE =====
+function reportArticle(i){
+    if(!articles[i]) return;
+    articles[i].reported=true;
+    localStorage.setItem("articles",JSON.stringify(articles));
+    alert("🚩 Article reported. Admin will review.");
+    filterArticles();
+}
+
+// ===== EDIT ARTICLE =====
+function editArticle(i){
+    if(!articles[i]) return;
+    const newContent=prompt("Edit content:",articles[i].content);
+    if(newContent!==null){
+        articles[i].content=newContent;
+        localStorage.setItem("articles",JSON.stringify(articles));
+        filterArticles();
+    }
+}
+
+// ===== DELETE ARTICLE =====
+function deleteArticle(i){
+    if(!articles[i]) return;
+    if(confirm("Are you sure you want to delete this article?")){
+        articles.splice(i,1);
+        localStorage.setItem("articles",JSON.stringify(articles));
+        filterArticles();
+    }
+}
+
+// ===== PREMIUM UPGRADE =====
+function upgradePremium(){
+    localStorage.setItem("premiumUser","true");
+    alert("🎉 You are now a Premium user!");
+    filterArticles();
+}
+
+// ===== INITIAL LOAD =====
+filterArticles();
+</script>
+
+</body>
+</html>

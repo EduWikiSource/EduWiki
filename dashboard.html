@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard - EduWiki</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:0;}
+header{background:#0073aa;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header button{background:#005d88;border:none;color:white;padding:8px 12px;border-radius:4px;cursor:pointer;}
+.container{max-width:900px;margin:20px auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+.card{border:1px solid #ddd;padding:15px;border-radius:6px;margin-bottom:15px;background:#fafafa;cursor:pointer;transition:0.2s;}
+.card:hover{background:#e6f0ff;}
+.card h2{margin:0;font-size:20px;}
+.card p{margin:5px 0;color:#555;}
+.badge{padding:2px 6px;font-size:12px;border-radius:4px;color:white;margin-left:5px;}
+.badge.premium{background:#dc3545;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>EduWiki Dashboard</h1>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+  <h2>Welcome, <span id="userName"></span> <span id="userRoleBadge"></span></h2>
+
+  <div class="card" onclick="window.location.href='add.html'">
+    <h2>📝 Add New Article</h2>
+    <p>Create a new article that can be free, restricted, or premium.</p>
+  </div>
+
+  <div class="card" onclick="window.location.href='view.html'">
+    <h2>📚 View Articles</h2>
+    <p>Browse all articles, like, and read content.</p>
+  </div>
+
+  <div class="card" onclick="window.location.href='search.html'">
+    <h2>🔍 Search Articles</h2>
+    <p>Search articles by keyword and category, report or edit your articles.</p>
+  </div>
+
+  <div class="card" id="premiumCard">
+    <h2>💎 Upgrade to Premium</h2>
+    <p>Unlock premium content and additional features.</p>
+  </div>
+
+  <div class="card" id="adminPanelCard" style="display:none;" onclick="window.location.href='admin.html'">
+    <h2>🛠️ Admin Panel</h2>
+    <p>Manage users and articles, approve or delete content.</p>
+  </div>
+</div>
+
+<script>
+// ===== LOGIN CHECK =====
+const currentUser = localStorage.getItem("currentUser");
+const currentRole = JSON.parse(localStorage.getItem("users") || "[]").find(u=>u.username===currentUser)?.role || "user";
+if(!currentUser){ alert("Login first"); window.location.href="index.html";}
+
+// ===== DISPLAY USER INFO =====
+document.getElementById("userName").textContent=currentUser;
+document.getElementById("userRoleBadge").textContent=currentRole.toUpperCase();
+document.getElementById("userRoleBadge").className="badge "+(currentRole==="admin"?"premium":"free");
+
+// ===== PREMIUM CARD VISIBILITY =====
+const isPremium = localStorage.getItem("premiumUser")==="true";
+document.getElementById("premiumCard").style.display=isPremium?"none":"block";
+
+// ===== ADMIN PANEL VISIBILITY =====
+if(currentRole==="admin") document.getElementById("adminPanelCard").style.display="block";
+
+// ===== LOGOUT =====
+function logout(){
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("currentRole");
+    window.location.href="index.html";
+}
+
+// ===== PREMIUM UPGRADE =====
+document.getElementById("premiumCard").addEventListener("click",()=>{
+    localStorage.setItem("premiumUser","true");
+    alert("🎉 You are now a Premium user!");
+    document.getElementById("premiumCard").style.display="none";
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upgrade to Premium - EduWiki</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>Upgrade to Premium</h1>
+
+  <p>Welcome, <span id="usernameDisplay"></span>!</p>
+  <p>Upgrade to Premium to access restricted and premium articles.</p>
+
+  <div id="paymentOptions" class="info-box">
+    <h3>Payment Options</h3>
+    <button onclick="payUPI()">Pay via UPI</button>
+    <button onclick="payOther()">Pay via Other</button>
+  </div>
+
+  <p><a href="dashboard.html" class="back-link">⬅ Back to Dashboard</a></p>
+</div>
+
+<script>
+  // Show current user
+  const currentUser = localStorage.getItem("currentUser") || "Anonymous";
+  document.getElementById("usernameDisplay").innerText = currentUser;
+
+  // If already premium, disable upgrade
+  const isPremium = localStorage.getItem("premiumUser") === "true";
+  if (isPremium) {
+    document.getElementById("paymentOptions").innerHTML = "<p>🎉 You are already a Premium user!</p>";
+  }
+
+  // Dummy UPI payment function
+  function payUPI() {
+    if (confirm("Simulate UPI payment?")) {
+      localStorage.setItem("premiumUser", "true");
+      alert("🎉 Payment successful! You are now a Premium user.");
+      location.reload();
+    }
+  }
+
+  function payOther() {
+    if (confirm("Simulate Other payment?")) {
+      localStorage.setItem("premiumUser", "true");
+      alert("🎉 Payment successful! You are now a Premium user.");
+      location.reload();
+    }
+  }
+</script>
+
+</body>
+</html>

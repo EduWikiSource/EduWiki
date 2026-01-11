@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Article - EduWiki</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    .editor-toolbar button {
+      margin: 4px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    #content {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+// 🔐 LOGIN CHECK
+const currentUser = localStorage.getItem("currentUser");
+if (!currentUser) {
+  alert("Please login first");
+  window.location.href = "index.html";
+}
+</script>
+
+<h1>📝 Add New Article</h1>
+
+<label>Title</label><br>
+<input type="text" id="title" placeholder="Enter article title" style="width:100%"><br><br>
+
+<label>Category</label><br>
+<select id="category">
+  <option>General</option>
+  <option>Technology</option>
+  <option>Education</option>
+  <option>Science</option>
+  <option>Health</option>
+  <option>Business</option>
+</select><br><br>
+
+<label>Access Type</label><br>
+<select id="accessType">
+  <option value="free">Free</option>
+  <option value="restricted">Restricted</option>
+  <option value="premium">Premium</option>
+</select><br><br>
+
+<!-- Toolbar -->
+<div class="editor-toolbar">
+  <button onclick="format('bold')"><b>B</b></button>
+  <button onclick="format('italic')"><i>I</i></button>
+  <button onclick="format('insertUnorderedList')">• List</button>
+  <button onclick="format('formatBlock','h3')">H3</button>
+  <button onclick="addLink()">🔗 Link</button>
+</div>
+
+<!-- Editor -->
+<div id="content" contenteditable="true"></div>
+<br>
+
+<button onclick="addArticle()">✅ Publish Article</button>
+<br><br>
+<a href="dashboard.html">⬅ Back to Dashboard</a>
+
+<script>
+function format(cmd, value = null) {
+  document.execCommand(cmd, false, value);
+}
+
+function addLink() {
+  const url = prompt("Enter URL:");
+  if (url) document.execCommand("createLink", false, url);
+}
+
+function addArticle() {
+  const title = document.getElementById("title").value.trim();
+  const content = document.getElementById("content").innerHTML.trim();
+  const category = document.getElementById("category").value;
+  const accessType = document.getElementById("accessType").value;
+  const author = localStorage.getItem("currentUser");
+
+  if (!title || !content) {
+    alert("Title and content are required");
+    return;
+  }
+
+  let articles = JSON.parse(localStorage.getItem("articles")) || [];
+
+  const article = {
+    id: Date.now().toString(),        // ✅ UNIQUE ID
+    title: title,
+    content: content,
+    category: category,
+    accessType: accessType,
+    author: author,                  // ✅ OWNER
+    likes: 0,
+    reports: [],                     // ✅ REPORT SYSTEM
+    createdAt: new Date().toISOString().split("T")[0]
+  };
+
+  articles.push(article);
+  localStorage.setItem("articles", JSON.stringify(articles));
+
+  alert("✅ Article published successfully!");
+  window.location.href = "view.html";
+}
+</script>
+
+</body>
+</html>

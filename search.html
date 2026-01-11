@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Search Articles - EduWiki</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:0;}
+header{background:#0073aa;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header button{background:#005d88;border:none;color:white;padding:8px 12px;border-radius:4px;cursor:pointer;}
+.container{max-width:1000px;margin:20px auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+.article-card{border:1px solid #ddd;padding:10px;border-radius:6px;margin-bottom:15px;background:#fafafa;position:relative;}
+.article-card button{margin:2px;padding:4px 8px;cursor:pointer;}
+.badge{padding:2px 6px;font-size:12px;border-radius:4px;color:white;margin-left:5px;}
+.badge.free{background:#28a745;}
+.badge.premium{background:#dc3545;}
+.badge.restricted{background:#6c757d;}
+.badge.admin{background:#6c757d;}
+.reported{background:#ffe6e6;}
+.editable{border:1px solid #0073aa;padding:4px;}
+#filterCategory,#query{padding:6px;margin:5px 0;width:100%;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Search Articles</h1>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+<label>Search by keyword:</label>
+<input type="text" id="query" placeholder="Enter keyword..." oninput="searchArticles()">
+
+<label>Filter by Category:</label>
+<select id="categoryFilter" onchange="searchArticles()">
+  <option value="All">All</option>
+  <option>Technology</option>
+  <option>Education</option>
+  <option>Science</option>
+  <option>Health</option>
+  <option>Business</option>
+  <option>General</option>
+</select>
+
+<br><br>
+
+<div id="result"></div>
+
+<a href="dashboard.html">⬅ Back to Dashboard</a>
+
+<script>
+// ===== LOGIN CHECK =====
+const currentUser = localStorage.getItem("currentUser");
+const currentRole = localStorage.getItem("currentRole");
+if(!currentUser){ alert("Login first"); window.location.href="index.html";}
+
+// ===== LOGOUT =====
+function logout(){ localStorage.removeItem("currentUser"); localStorage.removeItem("currentRole"); window.location.href="index.html";}
+
+// ===== PREMIUM CHECK =====
+function isPremiumUser(){ return localStorage.getItem("premiumUser")==="true"; }
+
+// ===== GLOBAL ARTICLES =====
+let articles = JSON.parse(localStorage.getItem("articles")) || [];
+
+// ===== DISPLAY ARTICLES =====
+function displayArticles(list){
+    const container=document.getElementById("result");
+    let output="";
+    list.forEach((a,i)=>{
+        let content=a.content;
+
+        // Premium/Restricted lock
+        if(a.accessType==="premium" && !isPremiumUser())
+            content="🔒 Premium article. <button onclick='upgradePremium()'>Upgrade Now</button>";
+        else if(a.accessType==="restricted" && !isPremiumUser())
+            content="🔒 Restricted article. <button onclick='upgradePremium()'>Upgrade Now</button>";
+
+        // article reported style
+        const reportedClass=a.reported ? "reported" : "";
+
+        // badges
+        let badgeClass=a.accessType==="premium"?"premium":a.accessType==="restricted"?"restricted":"free";
+        let badge=`<span class="badge ${badgeClass}">${a.accessType.toUpperCase()}</span>`;
+
+        // admin badge
+        if(a.author.toLowerCase()===currentUser.toLowerCase() && currentRole==="admin"){
+            badge+=` <span class="badge admin">ADMIN</span>`;
+        }
+
+        output+=`
+        <div class="article-card ${reportedClass}" id="article-${i}">
+            ${badge}
+            <h3>${a.title}</h3>
+            <p><b>Category:</b> ${a.category||"General"}</p>
+            <p id="content-${i}">${content}</p>
+            <p><b>Author:</b> ${a.author||"Anonymous"} | ❤️ Likes: ${a.likes||0}</p>
+            <button onclick="likeArticle(${i})">❤️ Like</button>
+            <button onclick="reportArticle(${i})">🚩 Report</button>
+            ${(a.author===currentUser || currentRole==="admin")? `<button onclick="editArticle(${i})">✏️ Edit</button>`:""}
+            ${(currentRole==="admin")? `<button onclick="deleteArticle(${i})">🗑️ Delete</button>`:""}
+        </div>`;
+    });
+    container.innerHTML=output||"<p>No results found</p>";
+}
+
+// ===== SEARCH ARTICLES =====
+function searchArticles(){
+    const keyword=(document.getElementById("query").value||"").trim().toLowerCase();
+    const categorySelected=(document.getElementById("categoryFilter").value||"All").trim().toLowerCase();
+
+    const filtered=articles.map((article,index)=>({article,index}))
+        .filter(({article})=>{
+            const matchKeyword=article.title.toLowerCase().includes(keyword) || article.content.toLowerCase().includes(keyword);
+            const matchCategory=categorySelected==="all" || (article.category||"General").trim().toLowerCase()===categorySelected;
+            return matchKeyword && matchCategory;
+        }).map(f=>f.article);
+
+    displayArticles(filtered);
+}
+
+// ===== LIKE ARTICLE =====
+function likeArticle(i){
+    if(!articles[i]) return;
+    articles[i].likes=(articles[i].likes||0)+1;
+    localStorage.setItem("articles",JSON.stringify(articles));
+    searchArticles();
+}
+
+// ===== REPORT ARTICLE =====
+function reportArticle(i){
+    if(!articles[i]) return;
+    articles[i].reported=true;
+    localStorage.setItem("articles",JSON.stringify(articles));
+    alert("🚩 Article reported. Admin will review.");
+    searchArticles();
+}
+
+// ===== EDIT ARTICLE =====
+function editArticle(i){
+    if(!articles[i]) return;
+    const newContent=prompt("Edit content:",articles[i].content);
+    if(newContent!==null){
+        articles[i].content=newContent;
+        localStorage.setItem("articles",JSON.stringify(articles));
+        searchArticles();
+    }
+}
+
+// ===== DELETE ARTICLE =====
+function deleteArticle(i){
+    if(!articles[i]) return;
+    if(confirm("Are you sure you want to delete this article?")){
+        articles.splice(i,1);
+        localStorage.setItem("articles",JSON.stringify(articles));
+        searchArticles();
+    }
+}
+
+// ===== PREMIUM UPGRADE =====
+function upgradePremium(){
+    localStorage.setItem("premiumUser","true");
+    alert("🎉 You are now a Premium user!");
+    searchArticles();
+}
+
+// ===== INITIAL LOAD =====
+searchArticles();
+</script>
+
+</body>
+</html>

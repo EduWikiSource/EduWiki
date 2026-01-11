@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - EduWiki</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+  <h1>EduWiki Login</h1>
+
+  <label>Username</label>
+  <input type="text" id="username" placeholder="Enter username">
+
+  <label>Password</label>
+  <input type="password" id="password" placeholder="Enter password">
+
+  <button onclick="login()">Login</button>
+
+  <p>
+    New user? <a href="register.html">Register here</a>
+  </p>
+</div>
+
+<script>
+function login() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!username || !password) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const found = users.find(u => u.username === username && u.password === password);
+
+  if (!found) {
+    alert("Invalid login details");
+    return;
+  }
+
+  localStorage.setItem("currentUser", username);
+  localStorage.setItem("premiumUser", found.isPremium ? "true" : "false");
+
+  window.location.href = "dashboard.html";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel - EduWiki</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:0;}
+header{background:#dc3545;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:22px;}
+header button{background:#a71d2a;border:none;color:white;padding:8px 12px;border-radius:4px;cursor:pointer;}
+.container{max-width:1000px;margin:20px auto;background:white;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+section{margin-bottom:30px;}
+h2{margin-top:0;color:#333;}
+.table{width:100%;border-collapse:collapse;}
+.table th,.table td{border:1px solid #ddd;padding:10px;text-align:left;}
+.table th{background:#f2f2f2;}
+.button{padding:5px 10px;margin:2px;border:none;border-radius:4px;cursor:pointer;}
+.button.delete{background:#dc3545;color:white;}
+.button.edit{background:#0073aa;color:white;}
+.button.reported{background:#ffc107;color:black;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Admin Panel</h1>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+  <section>
+    <h2>👤 Registered Users</h2>
+    <table class="table" id="usersTable">
+      <tr><th>Username</th><th>Role</th><th>Email</th><th>Phone</th></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>📚 All Articles</h2>
+    <table class="table" id="articlesTable">
+      <tr><th>Title</th><th>Author</th><th>Category</th><th>Access</th><th>Likes</th><th>Reported</th><th>Actions</th></tr>
+    </table>
+  </section>
+</div>
+
+<script>
+// ===== LOGIN & ADMIN CHECK =====
+const currentUser = localStorage.getItem("currentUser");
+const users = JSON.parse(localStorage.getItem("users")) || [];
+const currentRole = users.find(u=>u.username===currentUser)?.role || "user";
+
+if(!currentUser || currentRole!=="admin"){
+    alert("⚠️ Access denied. Admins only.");
+    window.location.href="index.html";
+}
+
+// ===== LOGOUT =====
+function logout(){
+    localStorage.removeItem("currentUser");
+    window.location.href="index.html";
+}
+
+// ===== LOAD USERS =====
+function loadUsers(){
+    const usersTable = document.getElementById("usersTable");
+    usersTable.innerHTML = '<tr><th>Username</th><th>Role</th><th>Email</th><th>Phone</th></tr>';
+    users.forEach(u=>{
+        usersTable.innerHTML += `<tr>
+            <td>${u.username}</td>
+            <td>${u.role}</td>
+            <td>${u.email||"-"}</td>
+            <td>${u.phone||"-"}</td>
+        </tr>`;
+    });
+}
+
+// ===== LOAD ARTICLES =====
+function loadArticles(){
+    const articles = JSON.parse(localStorage.getItem("articles")) || [];
+    const articlesTable = document.getElementById("articlesTable");
+    articlesTable.innerHTML = '<tr><th>Title</th><th>Author</th><th>Category</th><th>Access</th><th>Likes</th><th>Reported</th><th>Actions</th></tr>';
+
+    articles.forEach((a,index)=>{
+        const reported = a.reported?"Yes":"No";
+        articlesTable.innerHTML += `<tr>
+            <td>${a.title}</td>
+            <td>${a.author}</td>
+            <td>${a.category}</td>
+            <td>${a.accessType}</td>
+            <td>${a.likes}</td>
+            <td>${reported}</td>
+            <td>
+                <button class="button edit" onclick="editArticle(${index})">Edit</button>
+                <button class="button delete" onclick="deleteArticle(${index})">Delete</button>
+            </td>
+        </tr>`;
+    });
+}
+
+// ===== DELETE ARTICLE =====
+function deleteArticle(index){
+    const articles = JSON.parse(localStorage.getItem("articles")) || [];
+    if(confirm("Are you sure you want to delete this article?")){
+        articles.splice(index,1);
+        localStorage.setItem("articles",JSON.stringify(articles));
+        loadArticles();
+        alert("✅ Article deleted");
+    }
+}
+
+// ===== EDIT ARTICLE =====
+function editArticle(index){
+    const articles = JSON.parse(localStorage.getItem("articles")) || [];
+    const article = articles[index];
+    const newTitle = prompt("Edit Title:",article.title);
+    const newContent = prompt("Edit Content:",article.content);
+    if(newTitle && newContent){
+        article.title = newTitle;
+        article.content = newContent;
+        localStorage.setItem("articles",JSON.stringify(articles));
+        loadArticles();
+        alert("✅ Article updated");
+    }
+}
+
+// ===== INITIAL LOAD =====
+loadUsers();
+loadArticles();
+</script>
+
+</body>
+</html>
